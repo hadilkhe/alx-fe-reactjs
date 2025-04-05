@@ -1,51 +1,83 @@
 import React, { useState } from 'react';
-import { fetchUserData } from '../services/githubService';
+import githubService from './githubService';  // Import the service file
 
-const Search = () => {
+const SearchComponent = () => {
   const [username, setUsername] = useState('');
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [location, setLocation] = useState('');
+  const [minRepos, setMinRepos] = useState('');
+  const [results, setResults] = useState([]); // Store the results here
 
+  // Handle form submission
   const handleSearch = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    setUser(null);
 
-    try {
-      const data = await fetchUserData(username);
-      setUser(data);
-    } catch (err) {
-      setError('Looks like we can’t find the user');
-    } finally {
-      setLoading(false);
-    }
+    // Call the service to search users with the input data
+    const searchResults = await githubService.searchUsers({ username, location, minRepos });
+
+    // Update state with the search results
+    setResults(searchResults);
   };
 
   return (
-    <div>
-      <form onSubmit={handleSearch}>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Enter GitHub username"
-        />
-        <button type="submit">Search</button>
+    <div className="p-4">
+      {/* Search Form */}
+      <form onSubmit={handleSearch} className="space-y-4">
+        <div>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="GitHub Username"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        <div>
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Location"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        <div>
+          <input
+            type="number"
+            value={minRepos}
+            onChange={(e) => setMinRepos(e.target.value)}
+            placeholder="Min Repositories"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
+          Search
+        </button>
       </form>
 
-      {loading && <p>Loading...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {user && (
-        <div>
-          <img src={user.avatar_url} alt="avatar" width="100" />
-          <h2>{user.name || user.login}</h2>
-          <a href={user.html_url} target="_blank" rel="noreferrer">View Profile</a>
+      {/* Display Results */}
+      {results.length > 0 && (
+        <div className="mt-6 space-y-4">
+          <h2 className="text-xl font-bold">Search Results:</h2>
+          <ul>
+            {results.map((user) => (
+              <li key={user.id} className="bg-gray-700 p-4 rounded-lg shadow-md">
+                <h3 className="text-xl font-semibold text-white">{user.login}</h3>
+                <p className="text-gray-400">Location: {user.location || 'Not available'}</p>
+                <p className="text-gray-400">Repositories: {user.public_repos}</p>
+                <a
+                  href={user.html_url}
+                  className="text-blue-500 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer">
+                  View Profile
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
   );
 };
 
-export default Search;
+export default SearchComponent;
